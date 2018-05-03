@@ -23,4 +23,9 @@ export class RunSettings {
         }
         return false;
     }
+
+    public isCodeCoverageEnabled(): boolean {
+        // tslint:disable-next-line
+        return this.runSettings['JSCodeCoverage'] === "true";
+    }
  }

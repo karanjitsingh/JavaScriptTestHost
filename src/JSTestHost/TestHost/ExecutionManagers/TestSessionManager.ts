@@ -1,6 +1,8 @@
 import { IEnvironment } from '../../Environment/IEnvironment';
 import { TestSessionEventArgs } from '../../ObjectModel/TestFramework';
 import { IEvent, IEventArgs } from '../../ObjectModel/Common';
+import { CodeCoverage, CoverageReporter } from '../CodeCoverage';
+import { RunSettings } from '../RunSettings';
 
 interface TestSession {
     Source: string;
@@ -8,13 +10,17 @@ interface TestSession {
     Job: () => void;
     ErrorCallback: (err: Error) => void;
     Complete: boolean;
+    Coverage: CodeCoverage;
+    CoverageMap: any;
 }
 
 export class TestSessionManager {
+    private runSettings: RunSettings;
     private testSessionBucket: Map<string, TestSession>;
     private testSessionIterator: IterableIterator<TestSession>;
     private sessionCompleteCount: number;
     private sessionCount: number;
+    private covReporter: CoverageReporter;
     public onSessionsComplete: IEvent<IEventArgs>;
     
     constructor(environment: IEnvironment) {
@@ -23,6 +29,11 @@ export class TestSessionManager {
         this.onSessionsComplete = environment.createEvent();
         this.testSessionBucket = new Map();
         this.testSessionIterator = this.testSessionBucket.values();
+        this.covReporter = new CoverageReporter();
+    }
+
+    public setRunSettings(runsettings: RunSettings) {
+        this.runSettings = runsettings;
     }
 
     public setSessionComplete(args: TestSessionEventArgs) {
@@ -32,6 +43,10 @@ export class TestSessionManager {
             this.sessionCompleteCount++;
 
             const nextSession = this.testSessionIterator.next();
+
+            if (this.runSettings.isCodeCoverageEnabled()) {
+                this.covReporter.addCoverage(testSession.Coverage.stopCoverage());
+            }
 
             if (!nextSession.done) {
                 this.runSessionInDomain(nextSession.value);
@@ -43,6 +58,7 @@ export class TestSessionManager {
 
         // Check for all session completion
         if (this.sessionCount === this.sessionCompleteCount) {
+            this.covReporter.report();
             this.onSessionsComplete.raise(this, {});
         }
     }
@@ -85,8 +101,12 @@ export class TestSessionManager {
                 testSession.ErrorCallback(err);
             });
             executionDomain.run(() => {
-                // this.codecoverage.startCoverage(executeJob);
-                testSession.Job();
+                if (this.runSettings.isCodeCoverageEnabled()) {
+                    testSession.Coverage = new CodeCoverage();
+                    testSession.Coverage.startCoverage(testSession.Job);
+                } else {
+                    testSession.Job();
+                }
             });
         } catch (err) {
             console.error('domain did not catch the error. hmmmm');

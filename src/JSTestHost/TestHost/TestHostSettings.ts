@@ -9,4 +9,5 @@ export interface TestHostSettings {
     LogFile: string;
     DataCollectionPort: number;
     TelemetryOptedIn: boolean;
+    CodeCoverageEnabled: boolean;
 }

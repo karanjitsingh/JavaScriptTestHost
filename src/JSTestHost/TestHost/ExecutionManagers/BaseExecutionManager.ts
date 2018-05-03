@@ -34,6 +34,7 @@ export abstract class BaseExecutionManager {
 
     protected setRunSettingsFromXml(runSettingsXml: string) {
         this.runSettings = new RunSettings(runSettingsXml, this.environment.getXmlParser());
+        this.testSessionManager.setRunSettings(this.runSettings);
     }
 
     protected getCompletetionPromise(): Promise<void> {

@@ -1,4 +1,5 @@
 import * as istanbulApi from 'istanbul-api';
+import * as libCoverage from 'istanbul-lib-coverage';
 
 interface Istanbul {
     coverageMap: any;
@@ -7,12 +8,51 @@ interface Istanbul {
     fn: any;
 }
 
+export class CoverageReporter {
+    private coverageMap: any;
+    
+    constructor() {
+        this.coverageMap = libCoverage.createCoverageMap({});
+
+    }
+
+    public addCoverage(map: any) {
+        this.coverageMap.merge(map);
+    }
+
+    public report() {
+        const configOverrides = {   
+            verbose:  false,
+            instrumentation: {
+                'include-all-sources': false,
+                root: 'D:\\JavaScriptTestHost\\test\\JSTestHost.UnitTests\\bin\\',
+                excludes: []
+                
+            },
+            reporting: {
+                print: 'none',
+                reports: [ ],
+                dir: './coverage'
+            }
+        };
+
+        const config = this.getConfig(configOverrides);
+
+        const reporter = istanbulApi.createReporter(config);
+        reporter.write(this.coverageMap);
+    }
+
+    private getConfig(overrides: Object) {
+        return istanbulApi.config.loadObject({}, overrides);
+    }
+}
+
 export class CodeCoverage {
     private source: string;
     private istanbul: Istanbul;
     private executeJob: () => void;
 
-    constructor(source: string) {
+    constructor(source?: string) {
 
         this.source = source;
 
@@ -26,7 +66,7 @@ export class CodeCoverage {
             },
             reporting: {
                 print: 'none',
-                reports: [],
+                reports: [ ],
                 dir: './coverage'
             }
         };
@@ -37,8 +77,7 @@ export class CodeCoverage {
 
     public stopCoverage() {
         this.istanbul.exitFn();
-        console.error(this.istanbul.coverageMap);
-        console.error(this.istanbul.coverageMap[this.source]);
+        return this.istanbul.coverageMap;
     }
 
     public startCoverage(job: () => void) {

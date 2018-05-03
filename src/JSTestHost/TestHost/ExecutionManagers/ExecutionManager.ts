@@ -9,7 +9,6 @@ import { CSharpException, Exception, ExceptionType } from '../../Exceptions';
 import { IEnvironment } from '../../Environment/IEnvironment';
 import { TimeSpan } from '../../Utils/TimeSpan';
 import { MessageSender } from '../MessageSender';
-// import { CodeCoverage } from './CodeCoverage';
 import { BaseExecutionManager } from './BaseExecutionManager';
 import { TestExecutionCache } from '../TestCache';
 import { TestFrameworkEventHandlers } from '../TestFrameworks/TestFrameworkEventHandlers';
@@ -48,14 +47,15 @@ export class ExecutionManager extends BaseExecutionManager {
     }
 
     private startExecution(context: TestExecutionContext, sources: Array<string>): Promise<void> {
+        
         this.startTime = new Date();
         
         this.testExecutionCache = new TestExecutionCache(this.environment,
-                                                         context.FrequencyOfRunStatsChangeEvent,
-                                                         context.RunStatsChangeEventTimeout);
-
-        this.testExecutionCache.onTestRunStatsChange.subscribe(this.runStatsChange);
+            context.FrequencyOfRunStatsChangeEvent,
+            context.RunStatsChangeEventTimeout);
         
+        this.testExecutionCache.onTestRunStatsChange.subscribe(this.runStatsChange);
+            
         sources.forEach(source => {
             this.testSessionManager.addSession(source, () => {
                 const testFrameworkInstance = this.testFrameworkFactory.createTestFramework(this.testFramework);
@@ -66,7 +66,7 @@ export class ExecutionManager extends BaseExecutionManager {
                 this.sessionError(source, e);
             });
         });
-
+            
         return this.getCompletetionPromise();
     }
     
